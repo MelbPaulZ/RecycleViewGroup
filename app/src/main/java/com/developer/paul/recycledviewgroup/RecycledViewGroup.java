@@ -12,7 +12,9 @@ import android.widget.Toast;
 
 import com.developer.paul.recycledviewgroup.AwesomeViewGroup.AwesomeLayoutParams;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -23,7 +25,7 @@ public class RecycledViewGroup extends ViewGroup{
     private String TAG = "RecycledViewGroup";
     private int mTouchSlop;
     private List<AwesomeViewGroup> awesomeViewGroups;
-    int[] colors =new int[]{Color.BLACK, Color.BLUE, Color.GRAY, Color.YELLOW, Color.GREEN};
+    int[] colors =new int[]{Color.RED, Color.BLUE, Color.GRAY, Color.YELLOW, Color.GREEN};
     private int width,height;
     private float preX, preY;
 
@@ -43,6 +45,8 @@ public class RecycledViewGroup extends ViewGroup{
     private boolean hasDecideScrollWay = false; // if scroll too small, cannot decide whether is vertical or horizontal
     private int curScrollWay = 0; // {SCROLL_VERTICAL, SCROLL_HORIZONTAL} only one
 
+    public CalendarInterface calendarInterface;
+
 
     public RecycledViewGroup(Context context) {
         super(context);
@@ -52,6 +56,27 @@ public class RecycledViewGroup extends ViewGroup{
     public RecycledViewGroup(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
+    }
+
+    public void setCalendarInterface(CalendarInterface calendarInterface) {
+        this.calendarInterface = calendarInterface;
+        setCalendars();
+    }
+
+    private void setCalendars(){
+        int size = awesomeViewGroups.size();
+        for (int i = 0 ; i < size ; i ++){
+            Calendar c = calendarInterface.getFirstDay();
+            c.add(Calendar.DATE, i);
+            String dateString = formatCalendar(c);
+            awesomeViewGroups.get(i).setCalendar(c);
+            awesomeViewGroups.get(i).setTopText(dateString);
+        }
+    }
+
+    private String formatCalendar(Calendar c){
+        DateFormat dateformat = DateFormat.getDateInstance();
+        return dateformat.format(c.getTime());
     }
 
     private void init(){
@@ -92,12 +117,8 @@ public class RecycledViewGroup extends ViewGroup{
 
             float top = lp.top - y;
             float bottom = lp.bottom - y;
-//            lp.top = lp.top - y;
-//            lp.bottom = lp.bottom - y;
 
-            Log.i(TAG, "moveChildY: before check " + top + " , " + bottom);
             preCheck(top, bottom, lp); // if scroll too much...
-            Log.i(TAG, "moveChildY: after check " + lp.top + " , " + lp.bottom);
             awesomeViewGroup.reLayoutByLp();
         }
     }
@@ -111,6 +132,7 @@ public class RecycledViewGroup extends ViewGroup{
             if (leftViewGroup.isOutOfParent()){
                 moveFirstViewToLast(awesomeViewGroups);
                 reDrawViewGroupToLast(awesomeViewGroups.get(viewGroupSize - 2), awesomeViewGroups.get(viewGroupSize -1));
+                updateNewLastCalendar(awesomeViewGroups.get(viewGroupSize-1));
             }
         }else if(curScrollDir == SCROLL_RIGHT){
             // scroll right only check the last one
@@ -118,28 +140,22 @@ public class RecycledViewGroup extends ViewGroup{
             if (rightViewGroup.isOutOfParent()){
                 moveLastViewToFirst(awesomeViewGroups);
                 reDrawViewGroupToFirst(awesomeViewGroups.get(1), awesomeViewGroups.get(0));
+                updateNewFirstCalendar(awesomeViewGroups.get(0));
             }
         }
-
-        Log.i(TAG, "postCheck: " + awesomeViewGroups.get(0).getId() + " " +
-            awesomeViewGroups.get(1).getId() + " " +
-            awesomeViewGroups.get(2).getId() + " " +
-            awesomeViewGroups.get(3).getId() + " " +
-            awesomeViewGroups.get(4).getId() + " ");
     }
 
     private void preCheck(float top, float bottom,AwesomeLayoutParams lp){
         if (curScrollDir == SCROLL_DOWN){
-            Log.i(TAG, "preCheck: " + "scroll down");
             if (bottom < lp.parentHeight){
+                // reach bottom, stop scrolling
                 lp.bottom = lp.parentHeight;
                 lp.top = lp.bottom - lp.height;
                 return;
             }
         }else if (curScrollDir == SCROLL_UP){
-            Log.i(TAG, "preCheck: " + "scroll up");
             if (top > 0 ){
-                // valid, stop changing
+                // reach top, stop scrolling
                 lp.top = 0;
                 lp.bottom = lp.top + lp.height;
                 return;
@@ -185,6 +201,26 @@ public class RecycledViewGroup extends ViewGroup{
         awesomeViewGroup.reLayoutByLp();
     }
 
+    private void updateNewFirstCalendar(AwesomeViewGroup awesomeViewGroup){
+        updateCalendarForAwesomeViewGroup(awesomeViewGroup, -5);
+    }
+
+    private void updateNewLastCalendar(AwesomeViewGroup awesomeViewGroup){
+        updateCalendarForAwesomeViewGroup(awesomeViewGroup, 5);
+    }
+
+    private void updateCalendarForAwesomeViewGroup(AwesomeViewGroup awesomeViewGroup, int delta){
+        Calendar c = awesomeViewGroup.getCalendar();
+        if (c==null){
+            return;
+        }
+
+        c.add(Calendar.DATE, delta);
+        String dateString = formatCalendar(c);
+        awesomeViewGroup.setTopText(dateString);
+        awesomeViewGroup.setCalendar(c);
+    }
+
 
     private void recordHorizontalScrollDir(float x){
          curScrollDir = x > 0 ? SCROLL_LEFT: SCROLL_RIGHT;
@@ -223,19 +259,16 @@ public class RecycledViewGroup extends ViewGroup{
                 if (!hasDecideScrollWay) {
                     if (mTouchSlop < Math.abs(newY - preY)) {
                         // vertical scroll
-                        Log.i(TAG, "onTouchEvent: " + "vertical scroll");
                         hasDecideScrollWay = true;
                         curScrollWay = SCROLL_VERTICAL;
                     } else if (mTouchSlop < Math.abs(newX - preX)) {
                         // horizontal scroll
-                        Log.i(TAG, "onTouchEvent: " + "horizontal scroll");
                         hasDecideScrollWay = true;
                         curScrollWay = SCROLL_HORIZONTAL;
                     }
                 }
 
                 if (hasDecideScrollWay){
-                    Log.i(TAG, "onTouchEvent: " + "hasDecideScrollWay");
                     if (curScrollWay == SCROLL_HORIZONTAL) {
                         float moveX = preX - newX;
                         recordHorizontalScrollDir(moveX);
@@ -272,8 +305,6 @@ public class RecycledViewGroup extends ViewGroup{
         int childWidth = width/NUM_LAYOUTS;
         int childHeight = height * 2;
 
-        Log.i(TAG, "onMeasure: " + childHeight);
-
         int childCount = getChildCount();
         for (int i = 0 ; i < childCount ; i++){
             AwesomeViewGroup awesomeViewGroup = awesomeViewGroups.get(i);
@@ -289,7 +320,6 @@ public class RecycledViewGroup extends ViewGroup{
             lp.right = (i) * childWidth;
             lp.bottom = lp.top + lp.height;
         }
-        Log.i(TAG, "onMeasure: " + "onMeasure");
 
     }
 
@@ -301,7 +331,9 @@ public class RecycledViewGroup extends ViewGroup{
             AwesomeViewGroup child = awesomeViewGroups.get(i);
             child.reLayoutByLp();
         }
+    }
 
-        Log.i(TAG, "onLayout: " + "onLayout");
+    public interface CalendarInterface{
+        Calendar getFirstDay();
     }
 }

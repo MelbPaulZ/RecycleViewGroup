@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.Calendar;
+
 /**
  * Created by Paul on 9/5/17.
  */
@@ -17,6 +19,7 @@ public class AwesomeViewGroup extends ViewGroup {
     private TextView bottomTextView;
 
     private int width, height;
+    private Calendar calendar;
 
     public AwesomeViewGroup(Context context) {
         super(context);
@@ -28,6 +31,9 @@ public class AwesomeViewGroup extends ViewGroup {
         initView();
     }
 
+    /**
+     * for test only
+     */
     private void initView(){
         textView = new TextView(getContext());
         textView.setText("this is a text");
@@ -38,6 +44,18 @@ public class AwesomeViewGroup extends ViewGroup {
         bottomTextView.setText("this is bottom");
         bottomTextView.setTextSize(20);
         addView(bottomTextView);
+    }
+
+    public void setTopText(String text){
+        textView.setText(text);
+    }
+
+    public void setCalendar(Calendar calendar){
+        this.calendar = calendar;
+    }
+
+    public Calendar getCalendar() {
+        return calendar;
     }
 
     @Override
@@ -57,7 +75,10 @@ public class AwesomeViewGroup extends ViewGroup {
     }
 
 
-
+    /**
+     * if left scroll or right scroll make the view out of its parent
+     * @return
+     */
     public boolean isOutOfParent(){
         View parent = (View) getParent();
         if (parent==null){

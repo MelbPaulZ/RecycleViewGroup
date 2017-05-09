@@ -12,6 +12,7 @@
         android:layout_height="100dp" />
 
     <com.developer.paul.recycledviewgroup.RecycledViewGroup
+        android:id="@+id/recycled_view_group"
         android:layout_marginLeft="20dp"
         android:layout_width="300dp"
         android:layout_height="300dp" />
