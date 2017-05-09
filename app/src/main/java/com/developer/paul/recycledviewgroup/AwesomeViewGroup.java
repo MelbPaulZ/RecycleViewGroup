@@ -3,31 +3,57 @@ package com.developer.paul.recycledviewgroup;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.TextView;
 
 /**
  * Created by Paul on 9/5/17.
  */
 
 public class AwesomeViewGroup extends ViewGroup {
-    private int orgLeft, orgRight;
     private String TAG = "AwesomeViewGroup";
+    private TextView textView;
+    private TextView bottomTextView;
+
+    private int width, height;
 
     public AwesomeViewGroup(Context context) {
         super(context);
+        initView();
     }
 
     public AwesomeViewGroup(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+        initView();
     }
 
+    private void initView(){
+        textView = new TextView(getContext());
+        textView.setText("this is a text");
+        textView.setTextSize(20);
+        addView(textView);
+
+        bottomTextView = new TextView(getContext());
+        bottomTextView.setText("this is bottom");
+        bottomTextView.setTextSize(20);
+        addView(bottomTextView);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        width = MeasureSpec.getSize(widthMeasureSpec);
+        height = MeasureSpec.getSize(heightMeasureSpec);
+
+    }
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        textView.layout(0, 0, 300, 300);
 
+
+        bottomTextView.layout(0, height - 300, 300, height);
     }
 
 
@@ -47,37 +73,15 @@ public class AwesomeViewGroup extends ViewGroup {
             return true;
         }
 
-        if (lp.top <0){
-            return true;
-        }
-
-        if (lp.bottom > parent.getHeight()){
-            return true;
-        }
-
         return false;
     }
 
+    /**
+     * this method will automatically re-layout based on its layout params
+     */
     public void reLayoutByLp(){
         AwesomeLayoutParams lp = (AwesomeLayoutParams) getLayoutParams();
-        layout(lp.left, lp.top, lp.right, lp.bottom);
-    }
-
-
-    public void setOrgLeft(int orgLeft) {
-        this.orgLeft = orgLeft;
-    }
-
-    public void setOrgRight(int orgRight) {
-        this.orgRight = orgRight;
-    }
-
-    public int getOrgLeft() {
-        return orgLeft;
-    }
-
-    public int getOrgRight() {
-        return orgRight;
+        layout((int)lp.left, (int)lp.top, (int)lp.right, (int)lp.bottom);
     }
 
     @Override
@@ -102,10 +106,12 @@ public class AwesomeViewGroup extends ViewGroup {
 
     public static class AwesomeLayoutParams extends LayoutParams{
 
-        public int left;
-        public int top;
-        public int right;
-        public int bottom;
+        public float left;
+        public float top;
+        public float right;
+        public float bottom;
+
+        public float parentHeight;
 
 
         public AwesomeLayoutParams(Context c, AttributeSet attrs) {
