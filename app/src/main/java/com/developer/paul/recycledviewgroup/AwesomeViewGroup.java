@@ -3,6 +3,7 @@ package com.developer.paul.recycledviewgroup;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -95,6 +96,27 @@ public class AwesomeViewGroup extends ViewGroup {
         }
 
         return false;
+    }
+
+    public boolean isVisibleInParent(){
+        View parent = (View) getParent();
+        if (parent == null){
+            Log.i(TAG, "isVisibleInParent: " + getId() + ": parent null");
+            return false;
+        }
+
+        AwesomeLayoutParams lp = (AwesomeLayoutParams) getLayoutParams();
+        if (lp.right < 0){
+            Log.i(TAG, "isVisibleInParent: " + getId() +": lp.right < 0 ," + lp.right );
+            return false;
+        }
+
+        if (lp.left > parent.getWidth()){
+            Log.i(TAG, "isVisibleInParent: " + getId() + ": lp. left>parent.getWidth");
+            return false;
+        }
+
+        return true;
     }
 
     /**

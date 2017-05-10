@@ -31,6 +31,7 @@ public class RecycledViewGroup extends ViewGroup{
 
     public final int NUM_LAYOUTS = 3;
 
+    public final static int NON_SCROLL = 0;
     public final static int SCROLL_LEFT = 1;
     public final static int SCROLL_RIGHT = -1;
 
@@ -61,6 +62,18 @@ public class RecycledViewGroup extends ViewGroup{
     public void setCalendarInterface(CalendarInterface calendarInterface) {
         this.calendarInterface = calendarInterface;
         setCalendars();
+    }
+
+
+    public float getFirstVisibleLeftOffset(){
+        for (AwesomeViewGroup awesomeViewGroup: awesomeViewGroups){
+            if (awesomeViewGroup.isVisibleInParent()){
+                AwesomeLayoutParams lp = (AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
+                return lp.left;
+            }
+        }
+
+        return 0.0f;
     }
 
     private void setCalendars(){
@@ -130,8 +143,14 @@ public class RecycledViewGroup extends ViewGroup{
             // scroll left only check the first one
             AwesomeViewGroup leftViewGroup = awesomeViewGroups.get(1);
             if (leftViewGroup.isOutOfParent()){
+
                 moveFirstViewToLast(awesomeViewGroups);
                 reDrawViewGroupToLast(awesomeViewGroups.get(viewGroupSize - 2), awesomeViewGroups.get(viewGroupSize -1));
+                Log.i(TAG, "postCheck: SCROLL_LEFT: " + awesomeViewGroups.get(0).getId() + " " +
+                    awesomeViewGroups.get(1).getId() + " " +
+                    awesomeViewGroups.get(2).getId() + " " +
+                    awesomeViewGroups.get(3).getId() + " " +
+                    awesomeViewGroups.get(4).getId() );
                 updateNewLastCalendar(awesomeViewGroups.get(viewGroupSize-1));
             }
         }else if(curScrollDir == SCROLL_RIGHT){
@@ -141,6 +160,11 @@ public class RecycledViewGroup extends ViewGroup{
                 moveLastViewToFirst(awesomeViewGroups);
                 reDrawViewGroupToFirst(awesomeViewGroups.get(1), awesomeViewGroups.get(0));
                 updateNewFirstCalendar(awesomeViewGroups.get(0));
+                Log.i(TAG, "postCheck: SCROLL_RIGHT: " + awesomeViewGroups.get(0).getId() + " " +
+                        awesomeViewGroups.get(1).getId() + " " +
+                        awesomeViewGroups.get(2).getId() + " " +
+                        awesomeViewGroups.get(3).getId() + " " +
+                        awesomeViewGroups.get(4).getId() );
             }
         }
     }
@@ -283,12 +307,14 @@ public class RecycledViewGroup extends ViewGroup{
                 }
 
                 break;
+            case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_DOWN:
                 preX = event.getX();
                 preY = event.getY();
                 break;
             case MotionEvent.ACTION_UP:
-                resetScrollDir();
+                Log.i(TAG, "onTouchEvent: " + "action up");
+//                resetScrollDir();
                 resetScrollWay();
                 break;
         }
@@ -298,26 +324,38 @@ public class RecycledViewGroup extends ViewGroup{
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+//        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         width = MeasureSpec.getSize(widthMeasureSpec);
         height = MeasureSpec.getSize(heightMeasureSpec);
+        setMeasuredDimension(width, height);
 
         int childWidth = width/NUM_LAYOUTS;
         int childHeight = height * 2;
-
         int childCount = getChildCount();
+        Log.i(TAG, "onMeasure: " + "on Measure called");
+
         for (int i = 0 ; i < childCount ; i++){
             AwesomeViewGroup awesomeViewGroup = awesomeViewGroups.get(i);
             measureChild(awesomeViewGroup, widthMeasureSpec, heightMeasureSpec);
-            AwesomeLayoutParams lp = (AwesomeLayoutParams) getChildAt(i).getLayoutParams();
+            AwesomeLayoutParams lp = (AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
 
             lp.parentHeight = height;
             lp.width = childWidth;
             lp.height = childHeight;
 
-            lp.top = 0;
-            lp.left = (i-1) * childWidth;
-            lp.right = (i) * childWidth;
+//            lp.top = 0;
+            if (curScrollDir == SCROLL_LEFT){
+                Log.i(TAG, "onMeasure: " + "left :" + awesomeViewGroup.getId());
+                lp.left = getFirstVisibleLeftOffset() + i * childWidth;
+            }else if (curScrollDir == SCROLL_RIGHT){
+                Log.i(TAG, "onMeasure: " + "right : " + awesomeViewGroup.getId());
+                lp.left = getFirstVisibleLeftOffset() + (i-1) * childWidth;
+            }else if (curScrollDir == NON_SCROLL){
+                Log.i(TAG, "onMeasure: " + "non scroll : " + awesomeViewGroup.getId());
+                lp.left = getFirstVisibleLeftOffset() + (i-1) * childWidth;
+            }
+
+            lp.right = lp.left + childWidth;
             lp.bottom = lp.top + lp.height;
         }
 

@@ -16,7 +16,9 @@ public class MainActivity extends AppCompatActivity {
         recycledViewGroup.setCalendarInterface(new RecycledViewGroup.CalendarInterface() {
             @Override
             public Calendar getFirstDay() {
-                return Calendar.getInstance();
+                Calendar c = Calendar.getInstance();
+                c.setLenient(true);
+                return c;
             }
         });
     }
