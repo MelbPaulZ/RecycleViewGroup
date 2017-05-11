@@ -2,20 +2,28 @@ package com.developer.paul.recycledviewgroup;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.widget.Toast;
+import android.view.animation.Animation;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.TranslateAnimation;
+import android.widget.Scroller;
 
 import com.developer.paul.recycledviewgroup.AwesomeViewGroup.AwesomeLayoutParams;
 
+import java.sql.Time;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+
 
 /**
  * Created by Paul on 9/5/17.
@@ -26,7 +34,7 @@ public class RecycledViewGroup extends ViewGroup{
     private int mTouchSlop;
     private List<AwesomeViewGroup> awesomeViewGroups;
     int[] colors =new int[]{Color.RED, Color.BLUE, Color.GRAY, Color.YELLOW, Color.GREEN};
-    private int width,height;
+    private int width,height, childWidth, childHeight;
     private float preX, preY;
 
     public final int NUM_LAYOUTS = 3;
@@ -47,6 +55,21 @@ public class RecycledViewGroup extends ViewGroup{
     private int curScrollWay = 0; // {SCROLL_VERTICAL, SCROLL_HORIZONTAL} only one
 
     public CalendarInterface calendarInterface;
+
+    public int scrollThreshold;
+
+    // for fling
+    private VelocityTracker mVelocityTracker;
+    private int mMaxVelocity;
+    private float mVelocityX, mVelocityY;
+    private Scroller mScroller;
+    private float mAccelerator, mScrollTime;
+
+
+    // for fling thread
+    private boolean canFling = false;
+    private int mSlots = 0;
+
 
 
     public RecycledViewGroup(Context context) {
@@ -105,6 +128,9 @@ public class RecycledViewGroup extends ViewGroup{
             addView(awesomeViewGroup);
             awesomeViewGroups.add(awesomeViewGroup);
         }
+
+        mMaxVelocity = ViewConfiguration.get(getContext()).getScaledMaximumFlingVelocity();
+        mScroller = new Scroller(getContext());
 
     }
 
@@ -254,14 +280,116 @@ public class RecycledViewGroup extends ViewGroup{
         curScrollDir = y > 0 ? SCROLL_DOWN : SCROLL_UP;
     }
 
-
-    private void resetScrollDir(){
-        curScrollDir = 0;
-    }
-
     private void resetScrollWay(){
         curScrollWay = 0;
         hasDecideScrollWay = false;
+    }
+
+    private void noFlingEndCheck(){
+        float needScrollDistance = childNeedsScrollToNearestPosition(awesomeViewGroups);
+        if (needScrollDistance != 0.0){
+            smoothMoveChildX(needScrollDistance);
+        }
+    }
+
+
+    private void smoothMoveChildX(float x){
+        curScrollDir = x < 0 ? SCROLL_RIGHT : SCROLL_LEFT; // animation scroll direction
+
+        for (AwesomeViewGroup awesomeViewGroup: awesomeViewGroups){
+            applyAnimation(x, awesomeViewGroup);
+        }
+        moveChildX(x);
+    }
+
+    private void smoothMoveChildY(float y){
+
+    }
+
+    private void applyAnimation(float x, AwesomeViewGroup awesomeViewGroup){
+        AwesomeLayoutParams lp = (AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
+        Animation ani = new TranslateAnimation(
+                x,  0, 0.0f, 0.0f);
+        Log.i(TAG, "applyAnimation: " + lp.left + ", " + (lp.left -x) + " : " + x);
+        ani.setDuration(500);
+        ani.setInterpolator(new DecelerateInterpolator());
+        ani.setFillAfter(false);
+        awesomeViewGroup.startAnimation(ani);
+    }
+
+    private float childNeedsScrollToNearestPosition(List<AwesomeViewGroup> awesomeViewGroups){
+        for (AwesomeViewGroup awesomeViewGroup : awesomeViewGroups){
+            if (awesomeViewGroup.isVisibleInParent() && awesomeViewGroup.isOutOfParent()){
+                AwesomeLayoutParams lp = (AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
+                return Math.abs(lp.right) > Math.abs(lp.left) ? lp.left : lp.right;
+            }
+        }
+        return 0;
+    }
+
+
+
+    private Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.what ==0 ) {
+                float moveDis = (float) msg.obj;
+                moveChildX(moveDis);
+            }
+        }
+    };
+
+    private AwesomeThread flingThread = new AwesomeThread();
+
+
+    private void checkFling(float velocityX, float velocityY, int scrollDir){
+        int[] scrollPos = ScrollHelper.calculateScrollDistance(mScroller, (int)velocityX, (int)velocityY);
+        switch (scrollDir){
+            case SCROLL_LEFT:
+            case SCROLL_RIGHT:
+                if (shouldFling(velocityX)){
+
+                    mScrollTime = ScrollHelper.calculateScrollTime(velocityX);
+                    float distance = scrollPos[0];
+                    float offset = 0 ;
+                    if (scrollDir == SCROLL_LEFT){
+                        offset = getFirstVisibleLeftOffset();
+                    }else if (scrollDir == SCROLL_RIGHT){
+                        offset = -getFirstVisibleLeftOffset();
+                    }
+                    distance = ScrollHelper.findRightPosition(distance, offset,childWidth);
+
+                    Log.i(TAG, "checkFling: " + distance);
+
+                    mAccelerator = ScrollHelper.calculateAccelerator(distance, mScrollTime);
+                    mSlots = (int) (Math.abs(mScrollTime) * 16);
+
+                    canFling = true;
+
+                    if (flingThread.getState()==Thread.State.NEW) {
+                        flingThread.start();
+                    }else{
+                        flingThread = new AwesomeThread();
+                        flingThread.start();
+                    }
+
+                }else{
+                    // not fling, only do post check
+                    noFlingEndCheck();
+                }
+                break;
+            case SCROLL_UP:
+            case SCROLL_DOWN:
+                if (shouldFling(velocityY)){
+                    smoothMoveChildY(scrollPos[1]);
+                }
+                break;
+        }
+    }
+
+    // 200 is a thredshold , if more than 200, then fling, otherwise not
+    private boolean shouldFling(float velocity){
+        return Math.abs(velocity) > 200;
     }
 
 
@@ -304,18 +432,30 @@ public class RecycledViewGroup extends ViewGroup{
                         moveChildY(moveY);
                         preY = newY;
                     }
+                    mVelocityTracker.addMovement(event);
+                    mVelocityTracker.computeCurrentVelocity(1000, mMaxVelocity);
+                    mVelocityX = mVelocityTracker.getXVelocity();
+                    mVelocityY = mVelocityTracker.getYVelocity();
                 }
 
                 break;
             case MotionEvent.ACTION_CANCEL:
+                break;
             case MotionEvent.ACTION_DOWN:
+                if (mVelocityTracker==null){
+                    mVelocityTracker = VelocityTracker.obtain();
+                }else{
+                    mVelocityTracker.clear();
+                }
+                mVelocityX = 0;
+                mVelocityY = 0;
                 preX = event.getX();
                 preY = event.getY();
+                canFling = false;
                 break;
             case MotionEvent.ACTION_UP:
-                Log.i(TAG, "onTouchEvent: " + "action up");
-//                resetScrollDir();
                 resetScrollWay();
+                checkFling(mVelocityX, mVelocityY, curScrollDir);
                 break;
         }
 
@@ -329,9 +469,10 @@ public class RecycledViewGroup extends ViewGroup{
         height = MeasureSpec.getSize(heightMeasureSpec);
         setMeasuredDimension(width, height);
 
-        int childWidth = width/NUM_LAYOUTS;
-        int childHeight = height * 2;
+        childWidth = width/NUM_LAYOUTS;
+        childHeight = height * 2;
         int childCount = getChildCount();
+        scrollThreshold = childHeight/2;
         Log.i(TAG, "onMeasure: " + "on Measure called");
 
         for (int i = 0 ; i < childCount ; i++){
@@ -373,5 +514,42 @@ public class RecycledViewGroup extends ViewGroup{
 
     public interface CalendarInterface{
         Calendar getFirstDay();
+    }
+
+
+
+
+    private class AwesomeThread extends Thread{
+
+        @Override
+        public void run() {
+            int index = 0;
+            while(canFling) {
+                Message msg = new Message();
+                msg.what = 0;
+                float curTime = mScrollTime * (mSlots - index - 1) / mSlots;
+                float nextTime = index+1 == mSlots? curTime : mScrollTime * (mSlots - index) / mSlots;
+                float curDistance = ScrollHelper.getCurrentDistance(mAccelerator, curTime);
+                float nextDistance = ScrollHelper.getCurrentDistance(mAccelerator, nextTime);
+
+                float shouldMoveDis = curDistance - nextDistance;
+
+                Log.i(TAG, "run: " + shouldMoveDis);
+
+                msg.obj = shouldMoveDis;
+                mHandler.sendMessage(msg);
+                try {
+                    Thread.sleep(16);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                index ++;
+                if (index >= mSlots){
+                    canFling = false;
+                }
+
+            }
+        }
     }
 }
