@@ -327,8 +327,9 @@ public class RecycledViewGroup extends ViewGroup{
         return 0;
     }
 
-
-
+    /**
+     * handler receive message from awesome thread, and continuously drawing new position
+     */
     private Handler mHandler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
@@ -339,6 +340,10 @@ public class RecycledViewGroup extends ViewGroup{
         }
     };
 
+    /**
+     * fling thread is for when doing fling, it continuously sending new moving
+     * distance to handler.
+     */
     private AwesomeThread flingThread = new AwesomeThread();
 
 
@@ -351,27 +356,17 @@ public class RecycledViewGroup extends ViewGroup{
 
                     mScrollTime = ScrollHelper.calculateScrollTime(velocityX);
                     float distance = scrollPos[0];
-                    float offset = 0 ;
-                    if (scrollDir == SCROLL_LEFT){
-                        offset = getFirstVisibleLeftOffset();
-                    }else if (scrollDir == SCROLL_RIGHT){
-                        offset = -getFirstVisibleLeftOffset();
-                    }
+                    float offset = scrollDir == SCROLL_LEFT ? getFirstVisibleLeftOffset() : -getFirstVisibleLeftOffset();
                     distance = ScrollHelper.findRightPosition(distance, offset,childWidth);
-
-                    Log.i(TAG, "checkFling: " + distance);
 
                     mAccelerator = ScrollHelper.calculateAccelerator(distance, mScrollTime);
                     mSlots = (int) (Math.abs(mScrollTime) * 16);
 
                     canFling = true;
-
-                    if (flingThread.getState()==Thread.State.NEW) {
-                        flingThread.start();
-                    }else{
+                    if (flingThread.getState()!= Thread.State.NEW){
                         flingThread = new AwesomeThread();
-                        flingThread.start();
                     }
+                    flingThread.start();
 
                 }else{
                     // not fling, only do post check
@@ -387,7 +382,7 @@ public class RecycledViewGroup extends ViewGroup{
         }
     }
 
-    // 200 is a thredshold , if more than 200, then fling, otherwise not
+    // 200 is a threshold , if more than 200, then fling, otherwise not
     private boolean shouldFling(float velocity){
         return Math.abs(velocity) > 200;
     }
@@ -451,7 +446,12 @@ public class RecycledViewGroup extends ViewGroup{
                 mVelocityY = 0;
                 preX = event.getX();
                 preY = event.getY();
-                canFling = false;
+                if (canFling){
+                    // view group is flinging, then can only do horizontal scroll
+                    hasDecideScrollWay = true;
+                    curScrollWay = SCROLL_HORIZONTAL;
+                }
+                canFling = false; // canFling -> false, stop flinging
                 break;
             case MotionEvent.ACTION_UP:
                 resetScrollWay();

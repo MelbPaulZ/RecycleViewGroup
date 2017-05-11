@@ -22,10 +22,6 @@ public class ScrollHelper {
     }
 
 
-    public static double easeAnimation(float x){
-        return Math.sqrt(1- Math.pow(x-1, 2));
-    }
-
     public static float calculateScrollTime(float velocity){
         return (float) (0.2 + velocity/1000);
     }
