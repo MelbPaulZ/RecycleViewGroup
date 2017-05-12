@@ -16,14 +16,17 @@ public class ScrollHelper {
         scroller.fling(0, 0, velocityX, velocityY,
                 Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE);
         outDist[0] = scroller.getFinalX()/2;
-        outDist[1] = scroller.getFinalY()/2;
+        outDist[1] = scroller.getFinalY()/5; // horizontal scroll need to be smaller
 
         return outDist;
     }
 
-
     public static float calculateScrollTime(float velocity){
         return (float) (0.2 + velocity/1000);
+    }
+
+    public static float calculateScrollTimeVertical(float velocity){
+        return (float) (0.1 + velocity/2000);
     }
 
     public static float calculateAccelerator(float dis, float time){

@@ -277,18 +277,12 @@ public class RecycledViewGroup extends ViewGroup{
         curScrollDir = y > 0 ? SCROLL_DOWN : SCROLL_UP;
     }
 
-    private void resetScrollWay(){
-        curScrollWay = 0;
-        hasDecideScrollWay = false;
-    }
-
     private void noFlingEndCheck(){
         float needScrollDistance = childNeedsScrollToNearestPosition(awesomeViewGroups);
         if (needScrollDistance != 0.0){
             smoothMoveChildX(needScrollDistance);
         }
     }
-
 
     /**
      * move each children with animations (fake move, not real move), then real move each children
@@ -298,20 +292,15 @@ public class RecycledViewGroup extends ViewGroup{
         curScrollDir = x < 0 ? SCROLL_RIGHT : SCROLL_LEFT; // animation scroll direction
 
         for (AwesomeViewGroup awesomeViewGroup: awesomeViewGroups){
-            applyAnimation(x, awesomeViewGroup);
+            applyAnimation(x, 0, awesomeViewGroup);
         }
         moveChildX(x);
     }
 
-    private void smoothMoveChildY(float y){
-
-    }
-
-    private void applyAnimation(float x, AwesomeViewGroup awesomeViewGroup){
-        AwesomeLayoutParams lp = (AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
+    private void applyAnimation(float x, float y, AwesomeViewGroup awesomeViewGroup){
         Animation ani = new TranslateAnimation(
-                x,  0, 0.0f, 0.0f);
-        ani.setDuration(500);
+                x,  0.0f, -y , 0.0f);
+        ani.setDuration(200);
         ani.setInterpolator(new DecelerateInterpolator());
         ani.setFillAfter(false);
         awesomeViewGroup.startAnimation(ani);
@@ -333,9 +322,16 @@ public class RecycledViewGroup extends ViewGroup{
     private Handler mHandler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what ==0 ) {
-                float moveDis = (float) msg.obj;
+            if (msg.obj==null){
+                return;
+            }
+            float moveDis = (float) msg.obj;
+            if (msg.what == 0 ) {
+                Log.i(TAG, "handleMessage: " + "horizontal : " + moveDis);
                 moveChildX(moveDis);
+            }else if (msg.what == 1){
+                Log.i(TAG, "handleMessage: " + "vertical : " + moveDis);
+                moveChildY(moveDis);
             }
         }
     };
@@ -362,6 +358,11 @@ public class RecycledViewGroup extends ViewGroup{
                     mAccelerator = ScrollHelper.calculateAccelerator(distance, mScrollTime);
                     mSlots = (int) (Math.abs(mScrollTime) * 16);
 
+                    // mSlots minimal 10
+                    if (mSlots < 10){
+                        mSlots = 10;
+                    }
+
                     canFling = true;
                     if (flingThread.getState()!= Thread.State.NEW){
                         flingThread = new AwesomeThread();
@@ -376,7 +377,29 @@ public class RecycledViewGroup extends ViewGroup{
             case SCROLL_UP:
             case SCROLL_DOWN:
                 if (shouldFling(velocityY)){
-                    smoothMoveChildY(scrollPos[1]);
+                    float distance = scrollPos[1];
+                    AwesomeLayoutParams lp = (AwesomeLayoutParams) awesomeViewGroups.get(0).getLayoutParams();
+                    if (scrollDir == SCROLL_UP){
+                        distance = distance + lp.top > 0? -lp.top : distance;
+                    }else if (scrollDir == SCROLL_DOWN){
+                        // distance < 0
+                        distance = lp.bottom + Math.abs(distance) > height?  -lp.bottom + height : distance;
+                    }
+                    Log.i(TAG, "checkFling: " + lp.top + " , " + distance);
+                    mScrollTime = ScrollHelper.calculateScrollTimeVertical(velocityY);
+                    mAccelerator = ScrollHelper.calculateAccelerator(distance, mScrollTime);
+                    mSlots = (int) (Math.abs(mScrollTime) * 16);
+
+                    // mSlots minimal 10
+                    if (mSlots < 10){
+                        mSlots = 10;
+                    }
+
+                    canFling = true;
+                    if (flingThread.getState()!= Thread.State.NEW){
+                        flingThread = new AwesomeThread();
+                    }
+                    flingThread.start();
                 }
                 break;
         }
@@ -408,8 +431,11 @@ public class RecycledViewGroup extends ViewGroup{
                 preY = ev.getY();
                 if (canFling){
                     // view group is flinging, then can only do horizontal scroll
-                    hasDecideScrollWay = true;
-                    curScrollWay = SCROLL_HORIZONTAL;
+                    if (curScrollWay == SCROLL_HORIZONTAL) {
+                        hasDecideScrollWay = true;
+                    }else{
+                        hasDecideScrollWay = false;
+                    }
                 }
                 canFling = false; // canFling -> false, stop flinging
                 break;
@@ -528,7 +554,7 @@ public class RecycledViewGroup extends ViewGroup{
                 break;
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "onTouchEvent: " + "up");
-                resetScrollWay();
+                hasDecideScrollWay = false;
                 checkFling(mVelocityX, mVelocityY, curScrollDir);
                 Log.i(TAG, "onTouchEvent: " + "true");
                 // this action up has to be true, because if you consumed the move actions in here,
@@ -599,14 +625,16 @@ public class RecycledViewGroup extends ViewGroup{
         public void run() {
             int index = 0;
             while(canFling) {
+                Log.i(TAG, "run: " + "can fling");
                 Message msg = new Message();
-                msg.what = 0;
+                msg.what = curScrollWay == SCROLL_HORIZONTAL? 0 : 1; // if horizontal scroll, then what = 0; if vertical scroll , then what = 1
                 float curTime = mScrollTime * (mSlots - index - 1) / mSlots;
                 float nextTime = index+1 == mSlots? curTime : mScrollTime * (mSlots - index) / mSlots;
                 float curDistance = ScrollHelper.getCurrentDistance(mAccelerator, curTime);
                 float nextDistance = ScrollHelper.getCurrentDistance(mAccelerator, nextTime);
                 float shouldMoveDis = curDistance - nextDistance;
 
+                Log.i(TAG, "run: " + "mSlots : " + mSlots);
                 msg.obj = shouldMoveDis;
                 mHandler.sendMessage(msg);
                 try {
