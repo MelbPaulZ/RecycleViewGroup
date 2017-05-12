@@ -39,7 +39,6 @@ public class ScrollHelper {
         int i = 0;
         int posOrNeg = distance==0? 0:(int) (distance/Math.abs(distance));
 
-        Log.i("offset", "findRightPosition: " + offset);
         while(true){
             float possibleLength = unitLength * i + offset;
             if (Math.abs(distance) <= possibleLength){

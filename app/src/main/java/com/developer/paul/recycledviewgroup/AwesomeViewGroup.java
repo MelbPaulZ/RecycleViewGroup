@@ -4,9 +4,12 @@ import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Calendar;
 
@@ -21,6 +24,7 @@ public class AwesomeViewGroup extends ViewGroup {
 
     private int width, height;
     private Calendar calendar;
+    private float startX;
 
     public AwesomeViewGroup(Context context) {
         super(context);
@@ -37,8 +41,14 @@ public class AwesomeViewGroup extends ViewGroup {
      */
     private void initView(){
         textView = new TextView(getContext());
-        textView.setText("this is a text");
+        textView.setText("this is top");
         textView.setTextSize(20);
+        textView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getContext(), textView.getText(), Toast.LENGTH_SHORT).show();
+            }
+        });
         addView(textView);
 
         bottomTextView = new TextView(getContext());
@@ -57,6 +67,49 @@ public class AwesomeViewGroup extends ViewGroup {
 
     public Calendar getCalendar() {
         return calendar;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                Log.i(TAG, "onTouchEvent: " + "down");
+                break;
+            case MotionEvent.ACTION_MOVE:
+                Log.i(TAG, "onTouchEvent: " + "move");
+                break;
+            case MotionEvent.ACTION_UP:
+                Log.i(TAG, "onTouchEvent: " + "up");
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                Log.i(TAG, "onTouchEvent: " + "cancel");
+                break;
+        }
+
+        boolean value = super.onTouchEvent(event);
+        Log.i(TAG, "onTouchEvent:  " + value);
+        return value;
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                Log.i(TAG, "onInterceptTouchEvent: " + "down");
+                break;
+            case MotionEvent.ACTION_MOVE:
+                Log.i(TAG, "onInterceptTouchEvent: " + "move");
+                break;
+            case MotionEvent.ACTION_UP:
+                Log.i(TAG, "onInterceptTouchEvent: " + "up");
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                Log.i(TAG, "onInterceptTouchEvent: " + "cancel");
+                break;
+        }
+        boolean value = super.onInterceptTouchEvent(ev);
+        Log.i(TAG, "onInterceptTouchEvent: " + value);
+        return value;
     }
 
     @Override
@@ -101,18 +154,15 @@ public class AwesomeViewGroup extends ViewGroup {
     public boolean isVisibleInParent(){
         View parent = (View) getParent();
         if (parent == null){
-            Log.i(TAG, "isVisibleInParent: " + getId() + ": parent null");
             return false;
         }
 
         AwesomeLayoutParams lp = (AwesomeLayoutParams) getLayoutParams();
         if (lp.right < 0){
-            Log.i(TAG, "isVisibleInParent: " + getId() +": lp.right < 0 ," + lp.right );
             return false;
         }
 
         if (lp.left > parent.getWidth()){
-            Log.i(TAG, "isVisibleInParent: " + getId() + ": lp. left>parent.getWidth");
             return false;
         }
 
