@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import java.util.Calendar;
 
@@ -28,6 +29,8 @@ public class AwesomeViewGroup extends ViewGroup {
     private Calendar calendar;
     private int startX;
 
+    private TextView top,bottom;
+
     public AwesomeViewGroup(Context context) {
         super(context);
         initView();
@@ -42,6 +45,15 @@ public class AwesomeViewGroup extends ViewGroup {
      * for test only
      */
     private void initView(){
+        top = new TextView(getContext());
+        top.setText("this is top");
+        top.setTextSize(20);
+        addView(top);
+
+        bottom = new TextView(getContext());
+        bottom.setText("this is bottom");
+        bottom.setTextSize(20);
+        addView(bottom);
     }
 
     public void setCalendar(Calendar calendar){
@@ -107,6 +119,11 @@ public class AwesomeViewGroup extends ViewGroup {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int newW = r - l;
         int newH = b - t;
+
+        Log.i(TAG, "onLayout: " + l + " " + t + " " + r + " " + b);
+        top.layout(0, 0, 100,100);
+
+        bottom.layout(0, b-100,100, b);
 
         if (changed && item != null){
             if (!isInRange(newH, height, tolerance) || !isInRange(newW, width, tolerance)){

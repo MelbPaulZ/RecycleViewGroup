@@ -33,6 +33,10 @@ public class ScrollHelper {
         return scrollTime > 3? 3 : scrollTime;
     }
 
+    public static int calculateVerticalScrollTime(int velocity){
+        return 2;
+    }
+
     public static int calculateAccelerator(int dis, int time){
         return ( 2 * dis )/ (time * time);
     }
