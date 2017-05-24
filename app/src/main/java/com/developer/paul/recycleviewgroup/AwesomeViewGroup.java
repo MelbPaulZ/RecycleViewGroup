@@ -27,9 +27,8 @@ public class AwesomeViewGroup extends ViewGroup {
 
     private int width, height;
     private Calendar calendar;
+    private int inRecycledViewIndex;
     private int startX;
-
-    private TextView top,bottom;
 
     public AwesomeViewGroup(Context context) {
         super(context);
@@ -41,19 +40,18 @@ public class AwesomeViewGroup extends ViewGroup {
         initView();
     }
 
+    public int getInRecycledViewIndex() {
+        return inRecycledViewIndex;
+    }
+
+    public void setInRecycledViewIndex(int inRecycledViewIndex) {
+        this.inRecycledViewIndex = inRecycledViewIndex;
+    }
+
     /**
      * for test only
      */
     private void initView(){
-        top = new TextView(getContext());
-        top.setText("this is top");
-        top.setTextSize(20);
-        addView(top);
-
-        bottom = new TextView(getContext());
-        bottom.setText("this is bottom");
-        bottom.setTextSize(20);
-        addView(bottom);
     }
 
     public void setCalendar(Calendar calendar){
@@ -119,11 +117,6 @@ public class AwesomeViewGroup extends ViewGroup {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int newW = r - l;
         int newH = b - t;
-
-        Log.i(TAG, "onLayout: " + l + " " + t + " " + r + " " + b);
-        top.layout(0, 0, 100,100);
-
-        bottom.layout(0, b-100,100, b);
 
         if (changed && item != null){
             if (!isInRange(newH, height, tolerance) || !isInRange(newW, width, tolerance)){
