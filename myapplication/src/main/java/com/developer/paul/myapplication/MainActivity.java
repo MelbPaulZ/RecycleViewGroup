@@ -16,7 +16,7 @@ public class MainActivity extends AppCompatActivity {
         recycleViewGroup.setDisableCellScroll(true);
         recycleViewGroup.setScrollInterface(new RecycleViewGroup.ScrollInterface() {
             @Override
-            public void getMovePercent(float v) {
+            public void getMovePercent(float v, int direction) {
                 Log.i("new", "getMovePercent: " + v);
             }
         });

@@ -30,7 +30,7 @@ public class ScrollHelper {
 
     public static int calculateScrollTime(int velocity){
         int scrollTime = 1 + Math.abs(velocity)/2000;
-        return scrollTime > 3? 3 : scrollTime;
+        return scrollTime > 2? 2 : scrollTime;
     }
 
     public static int calculateVerticalScrollTime(int velocity){

@@ -89,6 +89,8 @@ public class RecycleViewGroup extends ViewGroup {
     // for disable cell scroll and allow percent of scroll
     private boolean disableCellScroll = false;
     private ScrollInterface scrollInterface;
+    private boolean shouldAbortGesture = false;
+
 
 
     public RecycleViewGroup(Context context, int CELL_HEIGHT, int NUM_LAYOUTS) {
@@ -147,7 +149,7 @@ public class RecycleViewGroup extends ViewGroup {
             AwesomeViewGroup awesomeViewGroup = new AwesomeViewGroup(getContext());
             awesomeViewGroup.setLayoutParams(new AwesomeViewGroup.AwesomeLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
             awesomeViewGroup.setId(i);
-            awesomeViewGroup.setBackgroundColor(colors[i]);
+//            awesomeViewGroup.setBackgroundColor(colors[i]);
             addView(awesomeViewGroup);
             awesomeViewGroup.setInRecycledViewIndex(i);
             awesomeViewGroups.add(awesomeViewGroup);
@@ -454,8 +456,8 @@ public class RecycleViewGroup extends ViewGroup {
             if (msg.what == AwesomeHandler.MOVE_WITH_PERCENT){
                 if (scrollInterface!=null){
                     float percent = (float) msg.obj;
-                    Log.i(TAG, "handleMessage: " + curScrollDir);
-                    scrollInterface.getMovePercent(percent);
+//                    Log.i(TAG, "handleMessage: " + curScrollDir);
+                    scrollInterface.getMovePercent(percent, curScrollDir);
                 }
             }
         }
@@ -487,7 +489,7 @@ public class RecycleViewGroup extends ViewGroup {
                 if (disableCellScroll){
                     int distance = 0;
                     // page scroll threshold
-                    if (Math.abs(alreadyMoveDis)> 0.5 * width){
+                    if (Math.abs(alreadyMoveDis)> 0.3 * width){
                         int posOrNeg = Math.abs(alreadyMoveDis)/alreadyMoveDis;
                         distance = (width - Math.abs(alreadyMoveDis)) * posOrNeg;
                     }else{
@@ -583,6 +585,14 @@ public class RecycleViewGroup extends ViewGroup {
             case MotionEvent.ACTION_DOWN:
                 // action down need to pass to child
 //                Log.i(TAG, "onInterceptTouchEvent: " + "down");
+
+                // when only page scroll and fling
+                if (disableCellScroll && canHorizontalFling){
+                    shouldAbortGesture = true;
+                    return true;
+                }
+
+
                 if (mVelocityTracker==null){
                     mVelocityTracker = VelocityTracker.obtain();
                 }else{
@@ -594,6 +604,9 @@ public class RecycleViewGroup extends ViewGroup {
                 startX = (int) ev.getX();
                 preX = (int) ev.getX();
                 preY = (int) ev.getY();
+
+
+
                 if (canHorizontalFling){
                     // view group is horizontal flinging, then can only do horizontal scroll
                     hasDecideScrollWay = true;
@@ -676,6 +689,13 @@ public class RecycleViewGroup extends ViewGroup {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = MotionEventCompat.getActionMasked(event);
+
+        // if still fling, then abort this touch
+        if (disableCellScroll && shouldAbortGesture){
+
+            shouldAbortGesture = false;
+            return false;
+        }
         switch (action){
             case MotionEvent.ACTION_MOVE:
 //                Log.i(TAG, "onTouchEvent: " + "move");
@@ -817,7 +837,7 @@ public class RecycleViewGroup extends ViewGroup {
     }
 
     public interface ScrollInterface{
-        void getMovePercent(float percent);
+        void getMovePercent(float percent, int direction);
     }
 
     public void setScrollInterface(ScrollInterface scrollInterface){
