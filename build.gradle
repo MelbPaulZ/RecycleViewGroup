@@ -15,6 +15,13 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
+        mavenLocal()
+    }
+
+    dependencies{
+        repositories{
+            maven { url 'http://146.118.101.148/repository/recycleviewgroup/'}
+        }
     }
 }
 

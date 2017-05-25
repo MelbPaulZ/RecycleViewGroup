@@ -38,9 +38,9 @@ public class RecycleViewGroup extends ViewGroup {
     private String TAG = "RecycledViewGroup";
     private int mTouchSlop;
     private List<AwesomeViewGroup> awesomeViewGroups;
-    int[] colors =new int[]{Color.RED, Color.BLUE, Color.GRAY, Color.YELLOW, Color.GREEN};
+    int[] colors =new int[]{Color.RED, Color.BLUE, Color.GRAY, Color.YELLOW, Color.GREEN, Color.WHITE, Color.MAGENTA, Color.DKGRAY, Color.CYAN};
     private int width,height, childWidth, childHeight;
-    private int preX, preY, startX, originX;
+    private int preX, preY, startX, originX, newX, newY;
 
 
     public final static int NON_SCROLL = 0;
@@ -84,7 +84,7 @@ public class RecycleViewGroup extends ViewGroup {
 
     //for calendar height calculation
     private int CELL_HEIGHT = 500;
-    private int NUM_LAYOUTS = 3;
+    private int NUM_LAYOUTS = 7;
 
     // for disable cell scroll and allow percent of scroll
     private boolean disableCellScroll = false;
@@ -164,16 +164,24 @@ public class RecycleViewGroup extends ViewGroup {
             AwesomeViewGroup awesomeViewGroup = awesomeViewGroups.get(i);
             AwesomeViewGroup.AwesomeLayoutParams lp = (AwesomeViewGroup.AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
 
-            Log.i(TAG, "moveChildX: before : " + lp.left + " " + x);
+//            Log.i(TAG, "moveChildX: before : " + lp.left + " " + x);
             lp.left = lp.left - x;
             lp.right = lp.right - x;
             awesomeViewGroup.reLayoutByLp();
-            Log.i(TAG, "moveChildX: " + lp.left + " ");
+//            Log.i(TAG, "moveChildX: " + lp.left + " ");
         }
         boolean changed = postCheckAfterMoveX();
         // if page has changed, notify handler
         if (changed){
             sendPageChangeMessage();
+        }
+
+        // send percent when move
+        if (disableCellScroll){
+            float moveDis = originX - newX;
+            float percent = Math.abs(moveDis / width);
+            Log.i(TAG, "moveChildX: " + "originX: " + originX + " x: " + x + " newX: " + newX + " percent : " + percent);
+            sendMovePercentMessage(percent);
         }
     }
 
@@ -181,7 +189,7 @@ public class RecycleViewGroup extends ViewGroup {
     private void moveChildY(int y){
         int childCount = getChildCount();
         int realY = 0;
-        Log.i(TAG, "moveChildY: " + y);
+//        Log.i(TAG, "moveChildY: " + y);
         for (int i = 0 ; i < childCount ; i ++ ){
             AwesomeViewGroup awesomeViewGroup = awesomeViewGroups.get(i);
             AwesomeViewGroup.AwesomeLayoutParams lp = (AwesomeViewGroup.AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
@@ -292,7 +300,7 @@ public class RecycleViewGroup extends ViewGroup {
 
         // todo: check if this can be changed
         if (adapter!=null){
-            adapter.notifyDataSetChanged();
+            adapter.notifyDataSetChanged(awesomeViewGroup);
         }
     }
 
@@ -422,18 +430,19 @@ public class RecycleViewGroup extends ViewGroup {
             if (msg.what == AwesomeHandler.MOVE ) {
                 AwesomeMessageObject awesomeMessageObject = (AwesomeMessageObject) msg.obj;
                 int moveDis = awesomeMessageObject.distance;
-                Log.i(TAG, "handleMessage: " + moveDis);
+//                Log.i(TAG, "handleMessage: " + moveDis);
                 moveChildX(moveDis);
             }
 
             if (msg.what == AwesomeHandler.CHANGE_PAGE){
                 // TODO: 22/5/17 inform david the page has changed
-                Log.i(TAG, "handleMessage: " + "page changed");
+//                Log.i(TAG, "handleMessage: " + "page changed");
             }
 
             if (msg.what == AwesomeHandler.FLING_HORIZONTAL){
                 int shouldMoveDis = (int) msg.obj;
-                Log.i(TAG, "handleMessage: " + "fling " + shouldMoveDis);
+                newX -= shouldMoveDis;
+//                Log.i(TAG, "handleMessage: " + "fling " + shouldMoveDis);
                 moveChildX(shouldMoveDis);
             }
 
@@ -445,6 +454,7 @@ public class RecycleViewGroup extends ViewGroup {
             if (msg.what == AwesomeHandler.MOVE_WITH_PERCENT){
                 if (scrollInterface!=null){
                     float percent = (float) msg.obj;
+                    Log.i(TAG, "handleMessage: " + curScrollDir);
                     scrollInterface.getMovePercent(percent);
                 }
             }
@@ -485,10 +495,10 @@ public class RecycleViewGroup extends ViewGroup {
                         distance = -alreadyMoveDis;
                     }
                     curScrollDir = distance > 0 ? SCROLL_RIGHT : SCROLL_LEFT;
-                    Log.i(TAG, "checkFling: " + curScrollDir);
+//                    Log.i(TAG, "checkFling: " + curScrollDir);
                     mScrollTime = ScrollHelper.calculateScrollTime(velocityX);
                     mAccelerator = ScrollHelper.calculateAccelerator(distance, mScrollTime);
-                    mSlots = (Math.abs(mScrollTime) * 16);
+                    mSlots = (Math.abs(mScrollTime) * 32); // need more slots, so use 32 instead of 16
                     canHorizontalFling = true;
                     if (flingThread.getState()!= Thread.State.NEW){
                         flingThread = new AwesomeThread();
@@ -502,9 +512,9 @@ public class RecycleViewGroup extends ViewGroup {
                     mScrollTime = ScrollHelper.calculateScrollTime(velocityX);
                     int distance = scrollPos[0];
                     int offset = alreadyMoveDis;
-                    Log.i(TAG, "checkFling: before distance: " + distance + " offset : " + offset + " unitLength : " + childWidth);
+//                    Log.i(TAG, "checkFling: before distance: " + distance + " offset : " + offset + " unitLength : " + childWidth);
                     distance = ScrollHelper.findRightPosition(distance, offset, childWidth);
-                    Log.i(TAG, "checkFling: distance: " + distance + " offset : " + offset +  " unitLength : " + childWidth);
+//                    Log.i(TAG, "checkFling: distance: " + distance + " offset : " + offset +  " unitLength : " + childWidth);
                     mAccelerator = ScrollHelper.calculateAccelerator(distance, mScrollTime);
                     mSlots = (Math.abs(mScrollTime) * 16);
 //                    Log.i(TAG, "checkFling: distance: " + distance +
@@ -528,7 +538,7 @@ public class RecycleViewGroup extends ViewGroup {
                 if (shouldFling(velocityY)){
                     int distance = scrollPos[1];
                     AwesomeViewGroup.AwesomeLayoutParams lp = (AwesomeViewGroup.AwesomeLayoutParams) awesomeViewGroups.get(0).getLayoutParams();
-                    Log.i(TAG, "checkFling: before " + distance + " top : " + lp.top);
+//                    Log.i(TAG, "checkFling: before " + distance + " top : " + lp.top);
                     int top = lp.top + distance; // need to check pos or neg
                     int bottom = lp.bottom + distance;
                     int actualY = getShouldVerticalMoveY(top, bottom, lp);
@@ -572,7 +582,7 @@ public class RecycleViewGroup extends ViewGroup {
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 // action down need to pass to child
-                Log.i(TAG, "onInterceptTouchEvent: " + "down");
+//                Log.i(TAG, "onInterceptTouchEvent: " + "down");
                 if (mVelocityTracker==null){
                     mVelocityTracker = VelocityTracker.obtain();
                 }else{
@@ -601,18 +611,18 @@ public class RecycleViewGroup extends ViewGroup {
                 //          action must be passed to its children.
                 // the action move code here is similar to code in onTouchEvent, because when intercepted move, next time,
                 // move action only be called in onTouchEvent
-                int newY = (int) ev.getY();
-                int newX = (int) ev.getX();
+                newY = (int) ev.getY();
+                newX = (int) ev.getX();
 
                 if (!hasDecideScrollWay) {
                     if (mTouchSlop < Math.abs(newY - preY)) {
                         // vertical scroll
-                        Log.i(TAG, "onInterceptTouchEvent: " + "vertical scroll");
+//                        Log.i(TAG, "onInterceptTouchEvent: " + "vertical scroll");
                         hasDecideScrollWay = true;
                         curScrollWay = SCROLL_VERTICAL;
                     } else if (mTouchSlop < Math.abs(newX - preX)) {
                         // horizontal scroll
-                        Log.i(TAG, "onInterceptTouchEvent: " + "horizontal scroll");
+//                        Log.i(TAG, "onInterceptTouchEvent: " + "horizontal scroll");
                         hasDecideScrollWay = true;
                         curScrollWay = SCROLL_HORIZONTAL;
                     }
@@ -628,6 +638,13 @@ public class RecycleViewGroup extends ViewGroup {
                         recordHorizontalScrollDir(moveFromStartX);
                         sendMoveMessage(curScrollDir, moveX);
                         preX = newX;
+
+//                        if (disableCellScroll){
+//                            float moveDis = originX - ev.getX();
+//                            float percent = Math.abs(moveDis / width);
+//                            sendMovePercentMessage(percent);
+//                        }
+
                     }else if (curScrollWay == SCROLL_VERTICAL){
                         int moveY = preY - newY;
                         recordVerticalScrollDir(moveY);
@@ -639,20 +656,20 @@ public class RecycleViewGroup extends ViewGroup {
                     mVelocityX = (int) mVelocityTracker.getXVelocity();
                     mVelocityY = (int) mVelocityTracker.getYVelocity();
 
-                    Log.i(TAG, "onInterceptTouchEvent: " + "move");
+//                    Log.i(TAG, "onInterceptTouchEvent: " + "move");
                     return true; // here must be true, so the recycledViewGroup can consume the action from now on
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                Log.i(TAG, "onInterceptTouchEvent: " + "up");
+//                Log.i(TAG, "onInterceptTouchEvent: " + "up");
                 break;
             case MotionEvent.ACTION_CANCEL:
-                Log.i(TAG, "onInterceptTouchEvent: " + "cancel");
+//                Log.i(TAG, "onInterceptTouchEvent: " + "cancel");
                 break;
         }
 
         boolean value = super.onInterceptTouchEvent(ev);
-        Log.i(TAG, "onInterceptTouchEvent: " + value);
+//        Log.i(TAG, "onInterceptTouchEvent: " + value);
         return value;
     }
 
@@ -661,19 +678,19 @@ public class RecycleViewGroup extends ViewGroup {
         int action = MotionEventCompat.getActionMasked(event);
         switch (action){
             case MotionEvent.ACTION_MOVE:
-                Log.i(TAG, "onTouchEvent: " + "move");
-                int newY = (int) event.getY();
-                int newX = (int) event.getX();
+//                Log.i(TAG, "onTouchEvent: " + "move");
+                newY = (int) event.getY();
+                newX = (int) event.getX();
 
                 if (!hasDecideScrollWay) {
                     if (mTouchSlop < Math.abs(newY - preY)) {
                         // vertical scroll
-                        Log.i(TAG, "onTouchEvent: " + "vertical scroll");
+//                        Log.i(TAG, "onTouchEvent: " + "vertical scroll");
                         hasDecideScrollWay = true;
                         curScrollWay = SCROLL_VERTICAL;
                     } else if (mTouchSlop < Math.abs(newX - preX)) {
                         // horizontal scroll
-                        Log.i(TAG, "onTouchEvent: " + "horizontal scroll");
+//                        Log.i(TAG, "onTouchEvent: " + "horizontal scroll");
                         hasDecideScrollWay = true;
                         curScrollWay = SCROLL_HORIZONTAL;
                     }
@@ -692,13 +709,11 @@ public class RecycleViewGroup extends ViewGroup {
                         preX = newX;
 
                         // if cell scroll is disable
-                        if (disableCellScroll){
-                            float moveDis = originX - event.getX();
-                            float percent = Math.abs(moveDis / width);
-                            sendMovePercentMessage(percent);
-                            Log.i(TAG, "onTouchEvent: " + percent);
-
-                        }
+//                        if (disableCellScroll){
+//                            float moveDis = originX - event.getX();
+//                            float percent = Math.abs(moveDis / width);
+//                            sendMovePercentMessage(percent);
+//                        }
 
                     }else if (curScrollWay == SCROLL_VERTICAL){
                         int moveY = preY - newY;
@@ -712,34 +727,34 @@ public class RecycleViewGroup extends ViewGroup {
                     mVelocityY = (int) mVelocityTracker.getYVelocity();
                 }
 
-                Log.i(TAG, "onTouchEvent: " + "true");
+//                Log.i(TAG, "onTouchEvent: " + "true");
                 // if recycled view is scrolling, then the move action has to be consumed, need true here
                 return true;
 
             case MotionEvent.ACTION_DOWN:
-                Log.i(TAG, "onTouchEvent: " + "down");
-                Log.i(TAG, "onTouchEvent: " + "true");
+//                Log.i(TAG, "onTouchEvent: " + "down");
+//                Log.i(TAG, "onTouchEvent: " + "true");
                 // here must return true. So if no children use the 'down', recycledViewGroup can still use it.
                 // Otherwise, you will find the recycledViewGroup cannot be scrolled.
                 return true;
             case MotionEvent.ACTION_CANCEL:
-                Log.i(TAG, "onTouchEvent: " + "cancel");
+//                Log.i(TAG, "onTouchEvent: " + "cancel");
                 break;
             case MotionEvent.ACTION_UP:
-                Log.i(TAG, "onTouchEvent: " + "up");
+//                Log.i(TAG, "onTouchEvent: " + "up");
                 if (hasDecideScrollWay) {
                     resetScrollWay();
                     int alreadyMoveDis =(int) (event.getX() - originX);
                     checkFling(mVelocityX, mVelocityY, curScrollDir, alreadyMoveDis);
                 }
-                Log.i(TAG, "onTouchEvent: " + "true");
+//                Log.i(TAG, "onTouchEvent: " + "true");
                 // this action up has to be true, because if you consumed the move actions in here,
                 // the last action up should also be consumed here.
                 return true;
         }
 
         boolean value = super.onTouchEvent(event);
-        Log.i(TAG, "onTouchEvent:onTouch" + value);
+//        Log.i(TAG, "onTouchEvent:onTouch" + value);
         return value;
     }
 
@@ -773,7 +788,7 @@ public class RecycleViewGroup extends ViewGroup {
             }else if (curScrollDir == NON_SCROLL){
 //                lp.left = getFirstVisibleLeftOffset() + (i-1) * childWidth;
                 lp.left = (i-1) * childWidth;
-                Log.i(TAG, "onMeasure: " + "this is : " + i + " left is : " + lp.left);
+//                Log.i(TAG, "onMeasure: " + "this is : " + i + " left is : " + lp.left);
             }
 
             lp.right = lp.left + childWidth;
@@ -817,7 +832,7 @@ public class RecycleViewGroup extends ViewGroup {
 
         AwesomeViewGroup.AwesomeLayoutParams lp = (AwesomeViewGroup.AwesomeLayoutParams) awesomeViewGroups.get(1).getLayoutParams();
         AwesomeViewGroup.AwesomeLayoutParams lp2 = (AwesomeViewGroup.AwesomeLayoutParams) awesomeViewGroups.get(2).getLayoutParams();
-        Log.i(TAG, "postCheckAfterFlingFinish: index1 left : " + lp.left + " index2 left: " + lp2.left + " scoll dis : " + needScrollDistance);
+//        Log.i(TAG, "postCheckAfterFlingFinish: index1 left : " + lp.left + " index2 left: " + lp2.left + " scoll dis : " + needScrollDistance);
 
         return needScrollDistance;
 //        return lp.left - 0;
@@ -826,16 +841,16 @@ public class RecycleViewGroup extends ViewGroup {
     private void printAwesomeViewgroupTopBottom(){
         for (AwesomeViewGroup awesomeViewGroup : awesomeViewGroups){
             AwesomeViewGroup.AwesomeLayoutParams lp = (AwesomeViewGroup.AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
-            Log.i(TAG, "run: " + "top : " + lp.top + " bottom : " + lp.bottom);
+//            Log.i(TAG, "run: " + "top : " + lp.top + " bottom : " + lp.bottom);
         }
     }
 
     private void printAwesomeViewGroupRightLeft(){
         for (AwesomeViewGroup awesomeViewGroup : awesomeViewGroups){
             AwesomeViewGroup.AwesomeLayoutParams lp = (AwesomeViewGroup.AwesomeLayoutParams) awesomeViewGroup.getLayoutParams();
-            Log.i(TAG, "run: right" + "left : " + lp.left + " right : " + lp.right);
+//            Log.i(TAG, "run: right" + "left : " + lp.left + " right : " + lp.right);
         }
-        Log.i(TAG, "run: right" );
+//        Log.i(TAG, "run: right" );
     }
 
     private class AwesomeVerticalThread extends Thread{
@@ -851,7 +866,7 @@ public class RecycleViewGroup extends ViewGroup {
                 int nextDistance = ScrollHelper.getCurrentDistance(mAccelerator, nextTime);
                 int shouldMoveDis = curDistance - nextDistance;
                 msg.obj = shouldMoveDis;
-                Log.i(TAG, "run: " + shouldMoveDis);
+//                Log.i(TAG, "run: " + shouldMoveDis);
                 mHandler.sendMessage(msg);
                 try {
                     Thread.sleep(16);
@@ -891,9 +906,9 @@ public class RecycleViewGroup extends ViewGroup {
                 int shouldMoveDis = curDistance - nextDistance;
                 msg.obj = shouldMoveDis;
                 totalFling += shouldMoveDis;
+                Log.i(TAG, "run: " + mSlots);
                 if (curTime == nextTime) {
                     msg.obj = postCheckAfterFlingFinish();
-                    Log.i(TAG, "run: " + "totalFling: " + totalFling + " " + "shouldMoveDis" + shouldFlingDis + " last fling: " + msg.obj);
                 }
                 mHandler.sendMessage(msg);
                 try {

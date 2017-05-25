@@ -66,21 +66,21 @@ public class AwesomeViewGroup extends ViewGroup {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()){
             case MotionEvent.ACTION_DOWN:
-                Log.i(TAG, "onTouchEvent: " + "down");
+//                Log.i(TAG, "onTouchEvent: " + "down");
                 break;
             case MotionEvent.ACTION_MOVE:
-                Log.i(TAG, "onTouchEvent: " + "move");
+//                Log.i(TAG, "onTouchEvent: " + "move");
                 break;
             case MotionEvent.ACTION_UP:
-                Log.i(TAG, "onTouchEvent: " + "up");
+//                Log.i(TAG, "onTouchEvent: " + "up");
                 break;
             case MotionEvent.ACTION_CANCEL:
-                Log.i(TAG, "onTouchEvent: " + "cancel");
+//                Log.i(TAG, "onTouchEvent: " + "cancel");
                 break;
         }
 
         boolean value = super.onTouchEvent(event);
-        Log.i(TAG, "onTouchEvent:  " + value);
+//        Log.i(TAG, "onTouchEvent:  " + value);
         return value;
     }
 
@@ -88,20 +88,20 @@ public class AwesomeViewGroup extends ViewGroup {
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         switch (ev.getAction()){
             case MotionEvent.ACTION_DOWN:
-                Log.i(TAG, "onInterceptTouchEvent: " + "down");
+//                Log.i(TAG, "onInterceptTouchEvent: " + "down");
                 break;
             case MotionEvent.ACTION_MOVE:
-                Log.i(TAG, "onInterceptTouchEvent: " + "move");
+//                Log.i(TAG, "onInterceptTouchEvent: " + "move");
                 break;
             case MotionEvent.ACTION_UP:
-                Log.i(TAG, "onInterceptTouchEvent: " + "up");
+//                Log.i(TAG, "onInterceptTouchEvent: " + "up");
                 break;
             case MotionEvent.ACTION_CANCEL:
-                Log.i(TAG, "onInterceptTouchEvent: " + "cancel");
+//                Log.i(TAG, "onInterceptTouchEvent: " + "cancel");
                 break;
         }
         boolean value = super.onInterceptTouchEvent(ev);
-        Log.i(TAG, "onInterceptTouchEvent: " + value);
+//        Log.i(TAG, "onInterceptTouchEvent: " + value);
         return value;
     }
 

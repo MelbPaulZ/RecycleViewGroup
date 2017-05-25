@@ -41,13 +41,17 @@ public abstract class ITimeAdapter {
     public abstract void onBindViewHolder(View item, int index);
 
 
+    public void notifyDataSetChanged(AwesomeViewGroup awesomeViewGroup){
+        onBindViewHolder(awesomeViewGroup.getItem(), awesomeViewGroup.getInRecycledViewIndex());
+    }
+
     public void notifyDataSetChanged(){
         if (awesomeViewGroups==null){
             return;
         }
         for (AwesomeViewGroup awesomeViewgroup: awesomeViewGroups){
             onBindViewHolder(awesomeViewgroup.getItem(), awesomeViewgroup.getInRecycledViewIndex());
-            Log.i("new index", "notifyDataSetChanged: " + awesomeViewgroup.getInRecycledViewIndex());
+//            Log.i("new index", "notifyDataSetChanged: " + awesomeViewgroup.getInRecycledViewIndex());
         }
     }
 

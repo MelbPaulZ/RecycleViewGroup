@@ -42,7 +42,7 @@ public class ScrollHelper {
     }
 
     public static int getCurrentDistance(float accelerator, float time){
-        Log.i("scrollHelper", "getCurrentDistance: " + accelerator + " " + time);
+//        Log.i("scrollHelper", "getCurrentDistance: " + accelerator + " " + time);
         return (int) (0.5 * accelerator * time * time);
     }
 
@@ -53,7 +53,7 @@ public class ScrollHelper {
 
         while(true){
             int possibleLength = offset < 0 ? unitLength * i + offset : unitLength * i - offset;
-            Log.i("find", "findRightPosition: "  + possibleLength +  " , " + Math.abs(distance));
+//            Log.i("find", "findRightPosition: "  + possibleLength +  " , " + Math.abs(distance));
             if (Math.abs(distance) <= Math.ceil(possibleLength)){
                 return possibleLength * posOrNeg;
             }
