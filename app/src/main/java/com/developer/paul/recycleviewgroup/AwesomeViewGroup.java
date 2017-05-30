@@ -52,6 +52,11 @@ public class AwesomeViewGroup extends ViewGroup {
      * for test only
      */
     private void initView(){
+//        TextView textView = new TextView(getContext());
+//        textView.setText("helloooo");
+//        textView.setTextSize(20);
+//        textView.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+//        addView(textView);
     }
 
     public void setCalendar(Calendar calendar){
@@ -117,6 +122,9 @@ public class AwesomeViewGroup extends ViewGroup {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int newW = r - l;
         int newH = b - t;
+
+//        TextView textView = (TextView) getChildAt(0);
+//        textView.layout(0, 0, 100, 100);
 
         if (changed && item != null){
             if (!isInRange(newH, height, tolerance) || !isInRange(newW, width, tolerance)){

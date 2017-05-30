@@ -36,7 +36,7 @@ uploadArchives {
         }
 
         pom.project {
-            version '1.0.10'
+            version '1.0.18'
             artifactId 'recycleviewgroup'
             groupId 'com.unimelb.itime'
             packaging 'aar'

@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         RecycleViewGroup recycleViewGroup = (RecycleViewGroup) findViewById(R.id.recycleviewgroup);
-        recycleViewGroup.setDisableCellScroll(true);
+//        recycleViewGroup.setDisableCellScroll(true);
         recycleViewGroup.setScrollInterface(new RecycleViewGroup.ScrollInterface() {
             @Override
             public void getMovePercent(float v, int direction) {
@@ -37,5 +37,13 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+//        recycleViewGroup.setOnSetting(new RecycleViewGroup.OnSetting() {
+//            @Override
+//            public int getItemHeight(int heightSpec) {
+//                return 200;
+//            }
+//        });
+//        recycleViewGroup.setDisableScroll(true);
     }
 }
